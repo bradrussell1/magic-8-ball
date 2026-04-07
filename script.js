@@ -27,71 +27,156 @@ function getAudioCtx() {
   return audioCtx;
 }
 
-// ── Sound: Shake / Rattle ─────────────────────────────────────────────────────
-// Burst of filtered noise with pitch wobble — sounds like liquid sloshing
+// ── Sound: SSB64 Home Run Bat — Swing Whoosh ─────────────────────────────────
+// Fast filtered-noise sweep simulating the bat cutting through the air
 function playShakeSound() {
   const ctx = getAudioCtx();
-  const duration = 0.65;
-  const bufferSize = ctx.sampleRate * duration;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
+  const t   = ctx.currentTime;
 
-  // White noise
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = (Math.random() * 2 - 1);
-  }
+  // ── Whoosh layer: high-pass noise sweeping downward ──
+  const whooshDur  = 0.28;
+  const bufSize    = Math.ceil(ctx.sampleRate * whooshDur);
+  const buffer     = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data       = buffer.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
 
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
 
-  // Band-pass filter to make it sound more like a hollow knock/liquid slosh
+  const hpf = ctx.createBiquadFilter();
+  hpf.type = 'highpass';
+  hpf.frequency.setValueAtTime(3200, t);
+  hpf.frequency.exponentialRampToValueAtTime(400, t + whooshDur);
+  hpf.Q.value = 0.8;
+
+  const whooshGain = ctx.createGain();
+  whooshGain.gain.setValueAtTime(0, t);
+  whooshGain.gain.linearRampToValueAtTime(0.7, t + 0.02);
+  whooshGain.gain.exponentialRampToValueAtTime(0.001, t + whooshDur);
+
+  noise.connect(hpf);
+  hpf.connect(whooshGain);
+  whooshGain.connect(ctx.destination);
+  noise.start(t);
+  noise.stop(t + whooshDur);
+
+  // ── Wind rush layer: band-pass noise for body of swing ──
+  const bufSize2 = Math.ceil(ctx.sampleRate * 0.22);
+  const buffer2  = ctx.createBuffer(1, bufSize2, ctx.sampleRate);
+  const data2    = buffer2.getChannelData(0);
+  for (let i = 0; i < bufSize2; i++) data2[i] = Math.random() * 2 - 1;
+
+  const noise2 = ctx.createBufferSource();
+  noise2.buffer = buffer2;
+
   const bpf = ctx.createBiquadFilter();
   bpf.type = 'bandpass';
-  bpf.frequency.setValueAtTime(280, ctx.currentTime);
-  bpf.frequency.linearRampToValueAtTime(120, ctx.currentTime + duration);
-  bpf.Q.value = 1.8;
+  bpf.frequency.setValueAtTime(900, t + 0.01);
+  bpf.frequency.exponentialRampToValueAtTime(200, t + 0.22);
+  bpf.Q.value = 1.5;
 
-  // Amplitude envelope: quick attack, decay
-  const gainNode = ctx.createGain();
-  gainNode.gain.setValueAtTime(0, ctx.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0.55, ctx.currentTime + 0.04);
-  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  const rushGain = ctx.createGain();
+  rushGain.gain.setValueAtTime(0.3, t + 0.01);
+  rushGain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
 
-  source.connect(bpf);
-  bpf.connect(gainNode);
-  gainNode.connect(ctx.destination);
-  source.start(ctx.currentTime);
-  source.stop(ctx.currentTime + duration);
+  noise2.connect(bpf);
+  bpf.connect(rushGain);
+  rushGain.connect(ctx.destination);
+  noise2.start(t + 0.01);
+  noise2.stop(t + 0.22);
 }
 
-// ── Sound: Mystical Chime ─────────────────────────────────────────────────────
-// Ascending arpeggiated sine tones with reverb-like tail
+// ── Sound: SSB64 Home Run Bat — Heavy BONK Impact ────────────────────────────
+// Deep low-freq thud + sharp transient crack simulating the iconic bat hit
 function playChimeSound() {
   const ctx = getAudioCtx();
+  const t   = ctx.currentTime;
 
-  // Pentatonic-ish ascending chord (Hz)
-  const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5]; // C5 E5 G5 C6 E6
+  // ── Crack transient: very short noise burst ──
+  const crackDur = 0.04;
+  const cBuf     = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * crackDur), ctx.sampleRate);
+  const cData    = cBuf.getChannelData(0);
+  for (let i = 0; i < cData.length; i++) cData[i] = Math.random() * 2 - 1;
 
-  notes.forEach((freq, i) => {
-    const osc      = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    const startTime = ctx.currentTime + i * 0.1;
+  const crack = ctx.createBufferSource();
+  crack.buffer = cBuf;
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, startTime);
-    // Slight vibrato
-    osc.frequency.linearRampToValueAtTime(freq * 1.003, startTime + 0.15);
+  const crackHpf = ctx.createBiquadFilter();
+  crackHpf.type = 'highpass';
+  crackHpf.frequency.value = 2000;
 
-    gainNode.gain.setValueAtTime(0, startTime);
-    gainNode.gain.linearRampToValueAtTime(0.22, startTime + 0.04);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 1.4);
+  const crackGain = ctx.createGain();
+  crackGain.gain.setValueAtTime(1.2, t);
+  crackGain.gain.exponentialRampToValueAtTime(0.001, t + crackDur);
 
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
+  crack.connect(crackHpf);
+  crackHpf.connect(crackGain);
+  crackGain.connect(ctx.destination);
+  crack.start(t);
+  crack.stop(t + crackDur);
 
-    osc.start(startTime);
-    osc.stop(startTime + 1.4);
-  });
+  // ── Thud body: sine oscillator pitched ~65 Hz (deep wooden thump) ──
+  const thud = ctx.createOscillator();
+  thud.type = 'sine';
+  thud.frequency.setValueAtTime(130, t);
+  thud.frequency.exponentialRampToValueAtTime(55, t + 0.18);
+
+  const thudGain = ctx.createGain();
+  thudGain.gain.setValueAtTime(0, t);
+  thudGain.gain.linearRampToValueAtTime(1.1, t + 0.008);
+  thudGain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+
+  thud.connect(thudGain);
+  thudGain.connect(ctx.destination);
+  thud.start(t);
+  thud.stop(t + 0.55);
+
+  // ── Mid-body resonance: square wave ~220 Hz for metallic bat ring ──
+  const ring = ctx.createOscillator();
+  ring.type = 'square';
+  ring.frequency.setValueAtTime(220, t);
+  ring.frequency.exponentialRampToValueAtTime(110, t + 0.3);
+
+  const ringFilter = ctx.createBiquadFilter();
+  ringFilter.type = 'bandpass';
+  ringFilter.frequency.value = 300;
+  ringFilter.Q.value = 4;
+
+  const ringGain = ctx.createGain();
+  ringGain.gain.setValueAtTime(0.18, t + 0.005);
+  ringGain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+  ring.connect(ringFilter);
+  ringFilter.connect(ringGain);
+  ringGain.connect(ctx.destination);
+  ring.start(t + 0.005);
+  ring.stop(t + 0.35);
+
+  // ── Distant crowd "OOH" shimmer after the hit ──
+  const shimmerDur = 0.6;
+  const sBuf       = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * shimmerDur), ctx.sampleRate);
+  const sData      = sBuf.getChannelData(0);
+  for (let i = 0; i < sData.length; i++) sData[i] = Math.random() * 2 - 1;
+
+  const shimmer = ctx.createBufferSource();
+  shimmer.buffer = sBuf;
+
+  const shimBpf = ctx.createBiquadFilter();
+  shimBpf.type = 'bandpass';
+  shimBpf.frequency.setValueAtTime(3500, t + 0.05);
+  shimBpf.frequency.exponentialRampToValueAtTime(800, t + 0.05 + shimmerDur);
+  shimBpf.Q.value = 3;
+
+  const shimGain = ctx.createGain();
+  shimGain.gain.setValueAtTime(0, t + 0.05);
+  shimGain.gain.linearRampToValueAtTime(0.12, t + 0.1);
+  shimGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05 + shimmerDur);
+
+  shimmer.connect(shimBpf);
+  shimBpf.connect(shimGain);
+  shimGain.connect(ctx.destination);
+  shimmer.start(t + 0.05);
+  shimmer.stop(t + 0.05 + shimmerDur);
 }
 
 // ── Pick a random response (no repeat) ───────────────────────────────────────
