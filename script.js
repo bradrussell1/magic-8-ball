@@ -50,6 +50,15 @@ const responseText = document.getElementById('responseText');
 const runBtn       = document.getElementById('runBtn');
 const modeSelect   = document.getElementById('modeSelect');
 
+// ── Wait for M3 web components to upgrade before enabling interactions ───────
+Promise.all([
+  customElements.whenDefined('md-filled-button'),
+  customElements.whenDefined('md-outlined-select'),
+]).then(() => {
+  // Components are ready — set initial select value
+  modeSelect.value = 'nihilist';
+});
+
 // ── Audio Context (lazy init to comply with browser autoplay policy) ──────────
 function getAudioCtx() {
   if (!audioCtx) {
