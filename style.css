@@ -36,7 +36,7 @@ body {
 
 .subtitle {
   font-size: clamp(0.85rem, 2vw, 1rem);
-  color: #aaa;
+  color: #E8E0CE;
   letter-spacing: 0.04em;
 }
 
@@ -133,7 +133,7 @@ body {
   transform: translateX(-50%);
   width: clamp(130px, 26vw, 180px);
   text-align: center;
-  font-size: clamp(0.68rem, 1.6vw, 0.92rem);
+  font-size: clamp(0.52rem, 1.2vw, 0.72rem);
   font-weight: 600;
   color: #a0c4ff;
   text-shadow:
@@ -237,7 +237,7 @@ body {
 
 .mode-selector label {
   font-size: clamp(0.8rem, 1.8vw, 0.95rem);
-  color: #aaa;
+  color: #E8E0CE;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
