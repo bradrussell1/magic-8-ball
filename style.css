@@ -6,7 +6,9 @@
 }
 
 body {
-  background: radial-gradient(ellipse at center, #1a1a2e 0%, #0d0d0d 100%);
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.20)),
+    url('Public/Images/background.webp') center / cover no-repeat fixed;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -111,11 +113,11 @@ body {
 .triangle {
   width: 0;
   height: 0;
-  border-left: clamp(55px, 12vw, 80px) solid transparent;
-  border-right: clamp(55px, 12vw, 80px) solid transparent;
-  border-bottom: clamp(95px, 20vw, 135px) solid rgba(10, 30, 120, 0.9);
+  border-left: clamp(80px, 17vw, 115px) solid transparent;
+  border-right: clamp(80px, 17vw, 115px) solid transparent;
+  border-bottom: clamp(140px, 29vw, 195px) solid rgba(10, 30, 120, 0.9);
 
-  filter: drop-shadow(0 0 12px rgba(50, 100, 255, 0.7));
+  filter: drop-shadow(0 0 16px rgba(50, 100, 255, 0.8));
 
   position: relative;
   display: flex;
@@ -126,12 +128,12 @@ body {
 /* Response text sits inside triangle via absolute positioning */
 .response-text {
   position: absolute;
-  bottom: clamp(-110px, -20vw, -128px);
+  bottom: clamp(-160px, -28vw, -185px);
   left: 50%;
   transform: translateX(-50%);
-  width: clamp(90px, 18vw, 130px);
+  width: clamp(130px, 26vw, 180px);
   text-align: center;
-  font-size: clamp(0.62rem, 1.5vw, 0.85rem);
+  font-size: clamp(0.68rem, 1.6vw, 0.92rem);
   font-weight: 600;
   color: #a0c4ff;
   text-shadow:
@@ -161,6 +163,24 @@ body {
 
 .ball-container.shaking {
   animation: shake 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* ── Roll Across Screen Animation ───────────────────── */
+@keyframes rollAcross {
+  0%   { transform: translateX(0vw)   translateY(0px)   rotate(0deg); }
+  10%  { transform: translateX(-40vw) translateY(-18px) rotate(-160deg); }
+  22%  { transform: translateX(40vw)  translateY(12px)  rotate(120deg); }
+  34%  { transform: translateX(-30vw) translateY(-22px) rotate(-80deg); }
+  46%  { transform: translateX(25vw)  translateY(8px)   rotate(55deg); }
+  57%  { transform: translateX(-18vw) translateY(-14px) rotate(-35deg); }
+  68%  { transform: translateX(12vw)  translateY(6px)   rotate(22deg); }
+  79%  { transform: translateX(-6vw)  translateY(-6px)  rotate(-10deg); }
+  90%  { transform: translateX(3vw)   translateY(2px)   rotate(4deg); }
+  100% { transform: translateX(0vw)   translateY(0px)   rotate(0deg); }
+}
+
+.ball-container.rolling {
+  animation: rollAcross 1.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 /* ── Run Button ─────────────────────────────────────── */
@@ -205,6 +225,51 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+/* ── Mode Selector ──────────────────────────────────── */
+.mode-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-selector label {
+  font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+  color: #aaa;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mode-selector select {
+  padding: 8px 20px;
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-family: 'Georgia', serif;
+  color: #e8e0ff;
+  background: linear-gradient(135deg, #2a1460 0%, #110828 100%);
+  border: 2px solid rgba(140, 100, 255, 0.45);
+  border-radius: 30px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  text-align: center;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 14px rgba(100, 60, 220, 0.3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-width: 200px;
+}
+
+.mode-selector select:hover,
+.mode-selector select:focus {
+  border-color: rgba(160, 120, 255, 0.75);
+  box-shadow: 0 0 22px rgba(120, 80, 255, 0.5);
+}
+
+.mode-selector select option {
+  background: #1a0a4a;
+  color: #e8e0ff;
 }
 
 /* ── Responsive Tweaks ──────────────────────────────── */

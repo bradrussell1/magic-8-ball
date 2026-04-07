@@ -1,23 +1,47 @@
-// ── Responses ────────────────────────────────────────────────────────────────
-const RESPONSES = [
-  "Ask your father",
-  "Clearly Broken",
-  "You are eating alone tonight",
-  "$1.99 for more answers",
-  "We have been trying to reach you about your car's extended warranty",
-  "Yes",
-  "New Ball. Who dis?",
-  "Fuck that hurt",
-];
+// ── Response Sets ─────────────────────────────────────────────────────────────
+const RESPONSES = {
+  nihilist: [
+    "Does it matter? Nothing does.",
+    "The universe will swallow this question whole.",
+    "Sure. Also, we're all going to die.",
+    "Outlook uncertain. Existence also uncertain.",
+    "Ask again later. Or don't. It won't change anything.",
+    "Signs point to yes. Signs mean nothing.",
+    "Cannot predict now. Cannot predict ever.",
+    "It is decidedly so. Decidedly meaningless.",
+  ],
+  optimistic: [
+    "YES!! Oh my gosh YES!! This is SO exciting!!!",
+    "Absolutely!! And honestly?? Even better things are coming!!",
+    "Signs point to yes and I'm already SO proud of you!!",
+    "Cannot predict now but whatever happens will be PERFECT for you!!",
+    "It is decidedly so!! You literally cannot lose!!",
+    "Don't count on it — BUT that just means something BETTER is on the way!!",
+    "Most likely!! And honestly you deserve this so much!!",
+    "Outlook good!! Actually outlook GREAT!! Actually outlook INCREDIBLE!!",
+  ],
+  benbowen: [
+    "THIS IS THE SONG OF THE YEAR!",
+    "Absolutely. Now stop overthinking and let's go.",
+    "I have no idea but I respect the question.",
+    "What's the matter with Timmy.....HE'S A BUM!",
+    "I'll be honest with ya, I don't really remember last night.",
+    "Signs point to yes. Signs also point to the bar.",
+    "Outlook good. Outlook great actually. Someone get this person a drink.",
+    "Don't count on it, but count on me to make it interesting either way.",
+  ],
+};
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let lastIndex = -1;
+const lastIndex = { nihilist: -1, optimistic: -1, benbowen: -1 };
 let audioCtx = null;
+let nihilistWavBuffer = null; // cached decoded WAV
 
 // ── DOM References ────────────────────────────────────────────────────────────
-const ball        = document.getElementById('ball');
+const ball         = document.getElementById('ball');
 const responseText = document.getElementById('responseText');
 const runBtn       = document.getElementById('runBtn');
+const modeSelect   = document.getElementById('modeSelect');
 
 // ── Audio Context (lazy init to comply with browser autoplay policy) ──────────
 function getAudioCtx() {
@@ -25,6 +49,31 @@ function getAudioCtx() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
   return audioCtx;
+}
+
+// ── Load & cache the Home Run Bat Hit WAV ─────────────────────────────────────
+async function loadNihilistWav() {
+  if (nihilistWavBuffer) return nihilistWavBuffer;
+  try {
+    const ctx      = getAudioCtx();
+    const response = await fetch('Home Run Bat Hit.wav');
+    const arrayBuf = await response.arrayBuffer();
+    nihilistWavBuffer = await ctx.decodeAudioData(arrayBuf);
+  } catch (e) {
+    console.warn('Could not load Home Run Bat Hit.wav:', e);
+  }
+  return nihilistWavBuffer;
+}
+
+// ── Sound: Play the actual Home Run Bat Hit WAV (Nihilist mode) ───────────────
+async function playWavHitSound() {
+  const buf = await loadNihilistWav();
+  if (!buf) { playChimeSound(); return; } // fallback to synth if WAV fails
+  const ctx    = getAudioCtx();
+  const source = ctx.createBufferSource();
+  source.buffer = buf;
+  source.connect(ctx.destination);
+  source.start(ctx.currentTime);
 }
 
 // ── Sound: SSB64 Home Run Bat — Swing Whoosh ─────────────────────────────────
@@ -179,33 +228,37 @@ function playChimeSound() {
   shimmer.stop(t + 0.05 + shimmerDur);
 }
 
-// ── Pick a random response (no repeat) ───────────────────────────────────────
+// ── Pick a random response (no repeat, mode-aware) ───────────────────────────
 function pickResponse() {
+  const mode = modeSelect.value;
+  const pool = RESPONSES[mode];
   let idx;
   do {
-    idx = Math.floor(Math.random() * RESPONSES.length);
-  } while (idx === lastIndex);
-  lastIndex = idx;
-  return RESPONSES[idx];
+    idx = Math.floor(Math.random() * pool.length);
+  } while (idx === lastIndex[mode]);
+  lastIndex[mode] = idx;
+  return pool[idx];
 }
 
 // ── Main reveal sequence ──────────────────────────────────────────────────────
 function reveal() {
+  const mode = modeSelect.value;
+
   // Prevent double-click spam
   runBtn.disabled = true;
 
-  // 1. Play rattle immediately
+  // 1. Play swing whoosh immediately
   playShakeSound();
 
-  // 2. Add shake class to ball
-  ball.classList.add('shaking');
+  // 2. Add rolling class to ball
+  ball.classList.add('rolling');
 
   // 3. Fade out current text
   responseText.style.opacity = '0';
 
-  // 4. After shake finishes, swap text and play chime
+  // 4. After roll finishes, swap text and play hit sound
   setTimeout(() => {
-    ball.classList.remove('shaking');
+    ball.classList.remove('rolling');
 
     const newResponse = pickResponse();
     responseText.textContent = newResponse;
@@ -213,15 +266,19 @@ function reveal() {
     // Fade in new text
     responseText.style.opacity = '1';
 
-    // Play chime on reveal
-    playChimeSound();
+    // Nihilist → real WAV; everyone else → synthesized BONK
+    if (mode === 'nihilist') {
+      playWavHitSound();
+    } else {
+      playChimeSound();
+    }
 
-    // Re-enable button after chime starts
+    // Re-enable button after hit sound starts
     setTimeout(() => {
       runBtn.disabled = false;
     }, 600);
 
-  }, 700); // matches shake animation duration
+  }, 1500); // matches rollAcross animation duration
 }
 
 // ── Event Listeners ───────────────────────────────────────────────────────────
