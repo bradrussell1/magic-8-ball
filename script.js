@@ -32,10 +32,17 @@ const RESPONSES = {
   ],
 };
 
+// ── Sound file paths (per mode) ───────────────────────────────────────────────
+const SOUND_FILES = {
+  nihilist:   'Public/Sounds/Home Run Bat Hit.wav',
+  optimistic: 'Public/Sounds/Mario - Super Jump Coin Hit.wav',
+  benbowen:   'Public/Sounds/WARC_SE_373.wav',
+};
+
 // ── State ─────────────────────────────────────────────────────────────────────
 const lastIndex = { nihilist: -1, optimistic: -1, benbowen: -1 };
 let audioCtx = null;
-let nihilistWavBuffer = null; // cached decoded WAV
+const wavBuffers = { nihilist: null, optimistic: null, benbowen: null };
 
 // ── DOM References ────────────────────────────────────────────────────────────
 const ball         = document.getElementById('ball');
@@ -51,23 +58,23 @@ function getAudioCtx() {
   return audioCtx;
 }
 
-// ── Load & cache the Home Run Bat Hit WAV ─────────────────────────────────────
-async function loadNihilistWav() {
-  if (nihilistWavBuffer) return nihilistWavBuffer;
+// ── Load & cache a WAV buffer for a given mode ───────────────────────────────
+async function loadWav(mode) {
+  if (wavBuffers[mode]) return wavBuffers[mode];
   try {
     const ctx      = getAudioCtx();
-    const response = await fetch('Home Run Bat Hit.wav');
+    const response = await fetch(SOUND_FILES[mode]);
     const arrayBuf = await response.arrayBuffer();
-    nihilistWavBuffer = await ctx.decodeAudioData(arrayBuf);
+    wavBuffers[mode] = await ctx.decodeAudioData(arrayBuf);
   } catch (e) {
-    console.warn('Could not load Home Run Bat Hit.wav:', e);
+    console.warn(`Could not load ${SOUND_FILES[mode]}:`, e);
   }
-  return nihilistWavBuffer;
+  return wavBuffers[mode];
 }
 
-// ── Sound: Play the actual Home Run Bat Hit WAV (Nihilist mode) ───────────────
-async function playWavHitSound() {
-  const buf = await loadNihilistWav();
+// ── Sound: Play the WAV for the current mode ─────────────────────────────────
+async function playModeHitSound(mode) {
+  const buf = await loadWav(mode);
   if (!buf) { playChimeSound(); return; } // fallback to synth if WAV fails
   const ctx    = getAudioCtx();
   const source = ctx.createBufferSource();
@@ -266,12 +273,8 @@ function reveal() {
     // Fade in new text
     responseText.style.opacity = '1';
 
-    // Nihilist → real WAV; everyone else → synthesized BONK
-    if (mode === 'nihilist') {
-      playWavHitSound();
-    } else {
-      playChimeSound();
-    }
+    // Play the mode-specific WAV hit sound
+    playModeHitSound(mode);
 
     // Re-enable button after hit sound starts
     setTimeout(() => {
